@@ -50,7 +50,13 @@ class Employee(models.Model):
         blank=True,
         null=True,
     )
-
+    daily_rate = models.DecimalField(
+    max_digits=12,
+    decimal_places=2,
+    null=True,
+    blank=True,
+)
+    
     payment_method = models.CharField(
         max_length=20,
         choices=PaymentMethod.choices,
@@ -75,31 +81,53 @@ class Employee(models.Model):
 
 class WorkRecord(models.Model):
 
-        employee = models.ForeignKey(
-            Employee,
-            on_delete=models.CASCADE,
-            related_name="work_records",
+    class AttendanceStatus(models.TextChoices):
+        WORKED = "WORKED", "Worked"
+        ABSENT = "ABSENT", "Absent"
+        OFF = "OFF", "Off Day"
+        LEAVE = "LEAVE", "Leave"
+
+    employee = models.ForeignKey(
+        Employee,
+        on_delete=models.CASCADE,
+        related_name="work_records",
     )
 
-        work_date = models.DateField()
+    work_date = models.DateField()
 
-        days_worked = models.DecimalField(
-            max_digits=4,
-            decimal_places=1,
-            default=1,
+    status = models.CharField(
+        max_length=20,
+        choices=AttendanceStatus.choices,
+        default=AttendanceStatus.WORKED,
     )
 
-        notes = models.TextField(
-            blank=True,
-            null=True,
+    days_worked = models.DecimalField(
+        max_digits=4,
+        decimal_places=1,
+        default=1,
     )
 
-        created_at = models.DateTimeField(
-            auto_now_add=True,
+    notes = models.TextField(
+        blank=True,
+        null=True,
     )
 
-        class Meta:
-            unique_together = ("employee", "work_date")
+    created_at = models.DateTimeField(
+        auto_now_add=True,
+    )
 
-        def __str__(self):
-            return f"{self.employee} - {self.work_date}"
+    class Meta:
+        unique_together = ("employee", "work_date")
+        ordering = ["-work_date"]
+
+    @property
+    def amount(self):
+        if self.status != self.AttendanceStatus.WORKED:
+            return 0
+
+        if self.employee.daily_rate is None:
+            return 0
+
+        return self.days_worked * self.employee.daily_rate
+    def __str__(self):
+        return f"{self.employee} - {self.work_date}"

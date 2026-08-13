@@ -34,16 +34,22 @@ class EmployeeAdmin(admin.ModelAdmin):
 class WorkRecordAdmin(admin.ModelAdmin):
 
     list_display = (
-        "employee",
-        "work_date",
-        "days_worked",
-    )
+    "employee",
+    "work_date",
+    "status",
+    "days_worked",
+    "amount",
+)
 
     list_filter = (
+        "status",
         "work_date",
     )
 
     search_fields = (
         "employee__first_name",
         "employee__last_name",
+        "employee__phone",
     )
+
+    date_hierarchy = "work_date"
